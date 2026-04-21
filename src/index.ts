@@ -7,7 +7,6 @@ import {
   productRoutes,
   authRoutes,
   cartRoutes,
-  bannerRoutes,
   categoryRoutes,
   checkOutRoutes,
   orderRoutes,
@@ -34,7 +33,6 @@ const start = async () => {
 
   // setup routes
   app.use('/api/auth', authRoutes);
-  app.use('/api/banners', bannerRoutes);
   app.use('/api/categories', categoryRoutes);
   app.use('/api/wishlist', wishlistRoutes);
   app.use('/api/cart', cartRoutes);
