@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Address } from '../models';
+import { Address } from '../models/Address'; // On pointe le fichier précis
 import { User as UserType } from '../types';
 
 export const index = async (req: Request, res: Response) => {
