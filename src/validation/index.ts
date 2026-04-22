@@ -94,25 +94,24 @@ export const changePasswordValidation = () => {
 export const productValidation = () => {
   return [
     body("name")
+      .trim()
       .isLength({ min: 6 })
       .withMessage("Name must be at least 6 chars long")
-      .trim()
       .escape(),
+    // Do not use .escape() on price or category — it mangles numbers and ObjectIds
     body("price")
-      .isNumeric()
       .trim()
-      .escape()
-      .withMessage("Price must be a number"),
+      .isFloat({ gt: 0 })
+      .withMessage("Price must be a positive number"),
     body("description")
+      .trim()
       .isLength({ min: 6, max: 400 })
-      .trim()
-      .escape()
-      .withMessage("Name must be at least 6 chars long"),
+      .withMessage("Description must be between 6 and 400 characters")
+      .escape(),
     body("category")
-      .isLength({ min: 3 })
       .trim()
-      .escape()
-      .withMessage("Category is required field"),
+      .isMongoId()
+      .withMessage("Category must be a valid MongoDB id"),
   ];
 };
 
