@@ -1,19 +1,15 @@
 import { Schema, model, Document, Types } from 'mongoose';
+import type { OrderItemDocument } from './OrderItem';
 
 const { ObjectId, Number: NumberType } = Schema.Types;
 
-export interface OrderItem {
-  quantity: number;
-  product: Types.ObjectId;
-}
-
 export interface OrderDocument extends Document {
   user: Types.ObjectId;
-  items: OrderItem[];
+  items?: OrderItemDocument[];
   total: number;
   payment?: Types.ObjectId;
   livraison?: Types.ObjectId;
-  adress?: Types.ObjectId;
+  address?: Types.ObjectId;
 }
 
 const OrderSchema = new Schema(
@@ -22,18 +18,6 @@ const OrderSchema = new Schema(
       type: ObjectId,
       ref: 'User',
     },
-    items: [
-      {
-        quantity: {
-          type: NumberType,
-          default: 1,
-        },
-        product: {
-          type: ObjectId,
-          ref: 'Product',
-        },
-      },
-    ],
     total: NumberType,
     payment: {
       type: ObjectId,
@@ -43,14 +27,23 @@ const OrderSchema = new Schema(
       type: ObjectId,
       ref: 'Livraison',
     },
-    adress: {
+    address: {
       type: ObjectId,
-      ref: 'Adress',
+      ref: 'Address',
     },
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
+
+OrderSchema.virtual('items', {
+  ref: 'OrderItem',
+  localField: '_id',
+  foreignField: 'order',
+  options: { sort: { createdAt: -1 } },
+});
 
 export const Order = model<OrderDocument>('Order', OrderSchema);

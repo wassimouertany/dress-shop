@@ -2,7 +2,7 @@ import { Schema, model, Document, Types } from 'mongoose';
 
 const { ObjectId, String } = Schema.Types;
 
-export interface AdressDocument extends Document {
+export interface AddressDocument extends Document {
   user: Types.ObjectId;
   region: string;
   city: string;
@@ -11,7 +11,7 @@ export interface AdressDocument extends Document {
   streetNumber: string;
 }
 
-const AdressSchema = new Schema(
+const AddressSchema = new Schema(
   {
     user: {
       type: ObjectId,
@@ -25,7 +25,8 @@ const AdressSchema = new Schema(
   },
   {
     timestamps: true,
+    collection: 'adresses',
   }
 );
 
-export const Adress = model<AdressDocument>('Adress', AdressSchema);
+export const Address = model<AddressDocument>('Address', AddressSchema);

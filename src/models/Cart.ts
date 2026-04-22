@@ -1,42 +1,33 @@
-import { ProductDocument } from './Product';
 import { UserDocument } from './User';
 import { Schema, model, Document } from 'mongoose';
+import type { CartItemDocument } from './CartItem';
 
-const { ObjectId, Number } = Schema.Types;
-
-export interface CartItem {
-  quantity: number;
-  product: ProductDocument['_id'];
-}
+const { ObjectId } = Schema.Types;
 
 export interface CartDocument extends Document {
   user: UserDocument['_id'];
-  items: CartItem[];
+  items?: CartItemDocument[];
 }
 
 const CartSchema = new Schema(
   {
-    // Client uses User discriminator; ref stays 'User'
     user: {
       type: ObjectId,
       ref: 'User',
     },
-    items: [
-      {
-        quantity: {
-          type: Number,
-          default: 1,
-        },
-        product: {
-          type: ObjectId,
-          ref: 'Product',
-        },
-      },
-    ],
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
+
+CartSchema.virtual('items', {
+  ref: 'CartItem',
+  localField: '_id',
+  foreignField: 'cart',
+  options: { sort: { createdAt: -1 } },
+});
 
 export const Cart = model<CartDocument>('Cart', CartSchema);

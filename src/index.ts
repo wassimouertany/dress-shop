@@ -8,7 +8,7 @@ import {
   authRoutes,
   cartRoutes,
   categoryRoutes,
-  adressRoutes,
+  addressRoutes,
   paymentRoutes,
   livraisonRoutes,
   orderRoutes,

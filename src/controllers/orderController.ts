@@ -6,7 +6,10 @@ export const index = async (req: Request, res: Response) => {
   try {
     const user = req.user as UserTypes;
     const orders = await Order.find({ user: user._id })
-      .populate('items.product')
+      .populate({
+        path: 'items',
+        populate: { path: 'product' },
+      })
       .sort('-createdAt');
     res.status(200).json({ data: orders });
   } catch (error) {

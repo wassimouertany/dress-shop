@@ -19,7 +19,7 @@ export const getByOrder = async (req: Request, res: Response) => {
     }
 
     const livraison = await Livraison.findOne({ order: orderId }).populate(
-      'adress'
+      'address'
     );
 
     if (!livraison) {
@@ -64,7 +64,7 @@ export const updateStatus = async (req: Request, res: Response) => {
 
     const updated = await Livraison.findByIdAndUpdate(id, payload, {
       new: true,
-    }).populate('adress');
+    }).populate('address');
 
     res.status(200).json({ data: updated, success: true });
   } catch (error) {
