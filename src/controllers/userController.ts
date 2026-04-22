@@ -1,33 +1,40 @@
 import { Request, Response } from 'express';
-import { User } from '../models';
-import { Role } from '../types';
+import { User as UserType } from '../types';
+import { updateUserProfile } from '../services/userService';
+
+const mapUserError = (res: Response, error: unknown): boolean => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  if (error.message.toLowerCase().includes('not found')) {
+    res.status(404).json({ message: 'User not found' });
+    return true;
+  }
+
+  if (error.message.toLowerCase().includes('mismatch')) {
+    res.status(402).json({ message: 'Ops user id mismatch' });
+    return true;
+  }
+
+  return false;
+};
 
 export const update = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { username, email, fullName, numTel } = req.body;
-
-    let user = await User.findById(id);
-
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    if (user.id !== id) {
-      return res.status(402).json({ message: 'Ops user id mismatch' });
-    }
-
-    const payload: Record<string, unknown> = { username, email };
-    if (user.role === Role.Client) {
-      if (fullName !== undefined) payload.fullName = fullName;
-      if (numTel !== undefined) payload.numTel = numTel;
-    }
-
-    user = await User.findOneAndUpdate({ _id: id }, payload, {
-      new: true,
-      runValidators: true,
-    });
-
+    const auth = req.user as UserType;
+    const user = await updateUserProfile(
+      id,
+      { username, email, fullName, numTel },
+      auth.role
+    );
     res.status(200).json({ data: user });
   } catch (error) {
+    if (mapUserError(res, error)) {
+      return;
+    }
     res.status(500).json({ message: 'Error in updating user details' });
   }
 };

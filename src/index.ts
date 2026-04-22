@@ -47,6 +47,7 @@ const start = async () => {
   app.use('/api/reviews', reviewRoutes);
   app.use('/api/users', userRoutes);
   app.use('/api/dashboard', dashboardRoutes);
+  app.use('/api/addresses', addressRoutes);
 
   app.listen(PORT, () => {
     console.log(`Server is running on ${PORT}`);

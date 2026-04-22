@@ -1,9 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
-import { JWT_EXPIRES_IN, JWT_SECRET_KEY } from '../config';
 import { User as UserType } from '../types';
-import { User, UserDocument } from '../models';
+import { UserDocument } from '../models';
 import passport from 'passport';
-import jwt from 'jsonwebtoken';
+import {
+  generateToken,
+  buildAuthResponse,
+  changePassword as changePasswordService,
+} from '../services/authService';
 
 export const sendResponseToken = ({
   user,
@@ -14,18 +17,7 @@ export const sendResponseToken = ({
   statusCode: number;
   res: Response;
 }) => {
-  const payload = {
-    user_id: user._id,
-  };
-
-  const token = jwt.sign(payload, JWT_SECRET_KEY, {
-    expiresIn: JWT_EXPIRES_IN,
-  });
-
-  // remove password from response
-  user.password = undefined;
-
-  res.status(statusCode).json({ data: { user, token }, success: true });
+  res.status(statusCode).json({ data: buildAuthResponse(user), success: true });
 };
 
 export const login = async (
@@ -87,20 +79,22 @@ export const changePassword = async (req: Request, res: Response) => {
       });
     }
 
-    const foundUser = await User.findById(user._id).select('+password');
+    const updatedUser = await changePasswordService(
+      String(user._id),
+      oldPassword,
+      newPassword
+    );
 
-    if (!foundUser) return res.status(404).json({ message: 'User not found ' });
-
-    const isPasswordCorrect = await foundUser.matchesPassword(oldPassword);
-
-    if (!isPasswordCorrect)
-      return res.status(401).json({ message: 'Old password is incorrect' });
-
-    foundUser.password = newPassword;
-    await foundUser.save();
-
-    sendResponseToken({ user: foundUser, res, statusCode: 200 });
+    sendResponseToken({ user: updatedUser, res, statusCode: 200 });
   } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === 'User not found') {
+        return res.status(404).json({ message: 'User not found ' });
+      }
+      if (error.message === 'Old password is incorrect') {
+        return res.status(401).json({ message: 'Old password is incorrect' });
+      }
+    }
     res.status(500).json({ message: 'Error in updating password.' });
   }
 };
