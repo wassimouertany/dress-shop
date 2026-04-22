@@ -1,18 +1,19 @@
 import { Schema, model, Document, Types } from 'mongoose';
 
-const { ObjectId, Number } = Schema.Types;
+const { ObjectId, Number: NumberType } = Schema.Types;
 
-interface Item {
+export interface OrderItem {
   quantity: number;
   product: Types.ObjectId;
 }
 
 export interface OrderDocument extends Document {
   user: Types.ObjectId;
-  items: Item[];
+  items: OrderItem[];
   total: number;
-  isPaid?: boolean;
-  paymentMethod: string;
+  payment?: Types.ObjectId;
+  livraison?: Types.ObjectId;
+  adress?: Types.ObjectId;
 }
 
 const OrderSchema = new Schema(
@@ -24,7 +25,7 @@ const OrderSchema = new Schema(
     items: [
       {
         quantity: {
-          type: Number,
+          type: NumberType,
           default: 1,
         },
         product: {
@@ -33,10 +34,18 @@ const OrderSchema = new Schema(
         },
       },
     ],
-    total: Number,
-    paymentMethod: {
-      type: String,
-      required: true,
+    total: NumberType,
+    payment: {
+      type: ObjectId,
+      ref: 'Payment',
+    },
+    livraison: {
+      type: ObjectId,
+      ref: 'Livraison',
+    },
+    adress: {
+      type: ObjectId,
+      ref: 'Adress',
     },
   },
   {

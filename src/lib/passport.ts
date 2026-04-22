@@ -1,7 +1,7 @@
 import passport from 'passport';
 import { Strategy as localStrategy } from 'passport-local';
 import { Strategy as JWTstrategy, ExtractJwt } from 'passport-jwt';
-import { User } from '../models';
+import { Client, User } from '../models';
 import { Role } from '../types';
 import { JWT_SECRET_KEY } from '../config';
 
@@ -36,18 +36,20 @@ passport.use(
     },
     async (req, email, password, done) => {
       try {
-        const { name } = req.body;
+        const { username, fullName, numTel } = req.body;
 
         let user = await User.findOne({ email: email.toLowerCase() });
 
         if (user)
           return done(null, false, { message: 'Email is already taken' });
 
-        user = await User.create({
+        user = await Client.create({
+          username,
           email,
           password,
-          name,
-          role: Role.User,
+          fullName,
+          numTel,
+          role: Role.Client,
         });
         //Send the user information to the next middleware
         return done(null, user);

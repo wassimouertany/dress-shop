@@ -4,6 +4,6 @@ import { index } from "../controllers/dashboardController";
 
 const router = Router();
 
-router.route("/").get(protect, authorize("admin"), index);
+router.route("/").get(protect, authorize("ADMIN"), index);
 
 export { router as dashboardRoutes };

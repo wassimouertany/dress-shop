@@ -20,4 +20,26 @@ export const Cloudinary = {
     });
     return res.secure_url;
   },
+
+  uploadBuffer: async (
+    buffer: Buffer,
+    folder: string,
+    { width, height }: { width: number; height: number }
+  ): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const stream = cloudinary.v2.uploader.upload_stream(
+        {
+          folder: `dress-shop/${folder}`,
+          transformation: { width, height, crop: "fill" },
+          overwrite: true,
+          invalidate: true,
+        },
+        (error, result) => {
+          if (error || !result) return reject(error);
+          resolve(result.secure_url);
+        }
+      );
+      stream.end(buffer);
+    });
+  },
 };

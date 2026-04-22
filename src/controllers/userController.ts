@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 import { User } from '../models';
-import { Cloudinary } from '../lib/cloudinary';
+import { Role } from '../types';
 
 export const update = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, email, image } = req.body;
+    const { username, email, fullName, numTel } = req.body;
 
     let user = await User.findById(id);
 
@@ -15,24 +15,16 @@ export const update = async (req: Request, res: Response) => {
       return res.status(402).json({ message: 'Ops user id mismatch' });
     }
 
-    if (image) {
-      // upload base64 image to cloudinary
-      const imageURL = await Cloudinary.upload(image, 'avatar', {
-        height: 160,
-        width: 160,
-      });
-      user = await User.findOneAndUpdate(
-        { _id: id },
-        { name, email, imageURL },
-        { new: true, runValidators: true }
-      );
-    } else {
-      user = await User.findOneAndUpdate(
-        { _id: id },
-        { name, email },
-        { new: true, runValidators: true }
-      );
+    const payload: Record<string, unknown> = { username, email };
+    if (user.role === Role.Client) {
+      if (fullName !== undefined) payload.fullName = fullName;
+      if (numTel !== undefined) payload.numTel = numTel;
     }
+
+    user = await User.findOneAndUpdate({ _id: id }, payload, {
+      new: true,
+      runValidators: true,
+    });
 
     res.status(200).json({ data: user });
   } catch (error) {

@@ -6,7 +6,7 @@ import {
   update,
   remove,
 } from "../controllers/productController";
-import { authorize, protect } from "../middleware";
+import { authorize, protect, uploadImage } from "../middleware";
 import { productValidation, validate } from "../validation";
 
 const router = Router();
@@ -14,12 +14,19 @@ const router = Router();
 router
   .route("/")
   .get(index)
-  .post(protect, authorize("admin"), productValidation(), validate, store);
+  .post(
+    uploadImage,
+    protect,
+    authorize("ADMIN"),
+    productValidation(),
+    validate,
+    store
+  );
 
 router
   .route("/:id")
   .get(show)
-  .delete(protect, authorize("admin"), remove)
-  .patch(protect, authorize("admin"), update);
+  .delete(protect, authorize("ADMIN"), remove)
+  .patch(uploadImage, protect, authorize("ADMIN"), update);
 
 export { router as productRoutes };
