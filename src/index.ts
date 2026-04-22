@@ -8,7 +8,7 @@ import {
   authRoutes,
   cartRoutes,
   categoryRoutes,
-  adressRoutes,
+  addressRoutes,
   paymentRoutes,
   livraisonRoutes,
   orderRoutes,
@@ -37,7 +37,7 @@ const start = async () => {
 
   // setup routes
   app.use('/api/auth', authRoutes);
-  app.use('/api/adresses', adressRoutes);
+  app.use('/api/addresses', addressRoutes);
   app.use('/api/categories', categoryRoutes);
   app.use('/api/wishlist', wishlistRoutes);
   app.use('/api/cart', cartRoutes);

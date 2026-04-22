@@ -1,10 +1,12 @@
 import mongoose from 'mongoose';
 import { Request, Response } from 'express';
 import {
-  Adress,
+  Address,
   Cart,
+  CartItem,
   Livraison,
   Order,
+  OrderItem,
   Payment,
   PaymentMethodEnum,
   PaymentStatusEnum,
@@ -20,9 +22,9 @@ const METHOD_VALUES: PaymentMethodEnum[] = [
 export const payment = async (req: Request, res: Response) => {
   try {
     const user = req.user as UserType;
-    const { method, adressId } = req.body as {
+    const { method, addressId } = req.body as {
       method?: string;
-      adressId?: string;
+      addressId?: string;
     };
 
     if (!method || !METHOD_VALUES.includes(method as PaymentMethodEnum)) {
@@ -31,22 +33,23 @@ export const payment = async (req: Request, res: Response) => {
       });
     }
 
-    if (!adressId) {
-      return res.status(400).json({ message: 'adressId is required' });
+    if (!addressId) {
+      return res.status(400).json({ message: 'addressId is required' });
     }
 
-    const adress = await Adress.findOne({
-      _id: adressId,
+    const address = await Address.findOne({
+      _id: addressId,
       user: user._id,
     });
 
-    if (!adress) {
+    if (!address) {
       return res.status(404).json({ message: 'Address not found' });
     }
 
-    const cart = await Cart.findOne({ user: user._id }).populate(
-      'items.product'
-    );
+    const cart = await Cart.findOne({ user: user._id }).populate({
+      path: 'items',
+      populate: { path: 'product' },
+    });
 
     if (!cart?.items?.length) {
       return res.status(400).json({ message: 'Cart is empty' });
@@ -61,12 +64,16 @@ export const payment = async (req: Request, res: Response) => {
     const order = await Order.create({
       user: user._id,
       total,
-      items: cart.items.map((item: any) => ({
+      address: address._id,
+    });
+
+    await OrderItem.insertMany(
+      cart.items.map((item: any) => ({
+        order: order._id,
         quantity: item.quantity,
         product: item.product._id ?? item.product,
-      })),
-      adress: adress._id,
-    });
+      }))
+    );
 
     let paymentRecord = await Payment.create({
       order: order._id,
@@ -84,7 +91,7 @@ export const payment = async (req: Request, res: Response) => {
 
     const livraison = await Livraison.create({
       order: order._id,
-      adress: adress._id,
+      address: address._id,
       status: StatusEnum.Shipped,
       trackingNumber: `TRK-${new mongoose.Types.ObjectId().toString()}`,
     });
@@ -94,15 +101,15 @@ export const payment = async (req: Request, res: Response) => {
       livraison: livraison._id,
     });
 
-    await Cart.findOneAndUpdate(
-      { _id: cart._id },
-      { $set: { items: [] } }
-    );
+    await CartItem.deleteMany({ cart: cart._id });
 
     const completedOrder = await Order.findById(order._id)
-      .populate('items.product')
+      .populate({
+        path: 'items',
+        populate: { path: 'product' },
+      })
       .populate('payment')
-      .populate('adress')
+      .populate('address')
       .populate('livraison');
 
     res.status(200).json({

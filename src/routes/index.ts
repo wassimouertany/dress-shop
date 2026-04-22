@@ -2,7 +2,7 @@ export * from './authRoutes';
 export * from './productRoutes';
 export * from './cartRoutes';
 export * from './categoryRoutes';
-export * from './adressRoutes';
+export * from './addressRoutes';
 export * from './paymentRoutes';
 export * from './livraisonRoutes';
 export * from './reviewRoutes';

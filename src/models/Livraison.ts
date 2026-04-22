@@ -10,7 +10,7 @@ export enum StatusEnum {
 
 export interface LivraisonDocument extends Document {
   order: Types.ObjectId;
-  adress: Types.ObjectId;
+  address: Types.ObjectId;
   status: string;
   trackingNumber: string;
   deliveredAt?: Date;
@@ -22,9 +22,9 @@ const LivraisonSchema = new Schema(
       type: ObjectId,
       ref: 'Order',
     },
-    adress: {
+    address: {
       type: ObjectId,
-      ref: 'Adress',
+      ref: 'Address',
     },
     status: {
       type: String,
