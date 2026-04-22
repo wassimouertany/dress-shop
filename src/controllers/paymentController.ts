@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import { Request, Response } from 'express';
 import {
-  Address,
   Cart,
   CartItem,
   Livraison,
@@ -12,6 +11,7 @@ import {
   PaymentStatusEnum,
   StatusEnum,
 } from '../models';
+import { Address } from '../models/Address'; // On pointe le fichier précis
 import { User as UserType } from '../types';
 
 const METHOD_VALUES: PaymentMethodEnum[] = [
