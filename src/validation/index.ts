@@ -18,9 +18,19 @@ export const loginValidation = () => {
 
 export const signUpValidation = () => {
   return [
-    body("name")
+    body("username")
       .isLength({ min: 6 })
-      .withMessage("Name must be at least 6 chars long")
+      .withMessage("Username must be at least 6 chars long")
+      .trim()
+      .escape(),
+    body("fullName")
+      .isLength({ min: 2 })
+      .withMessage("Full name is required")
+      .trim()
+      .escape(),
+    body("numTel")
+      .isLength({ min: 6 })
+      .withMessage("Phone number must be at least 6 chars long")
       .trim()
       .escape(),
     body("email")
@@ -38,9 +48,19 @@ export const signUpValidation = () => {
 
 export const updateProfileValidation = () => {
   return [
-    body("name")
+    body("username")
       .isLength({ min: 6 })
-      .withMessage("Name must be at least 6 chars long")
+      .withMessage("Username must be at least 6 chars long")
+      .trim()
+      .escape(),
+    body("fullName")
+      .optional()
+      .isLength({ min: 2 })
+      .trim()
+      .escape(),
+    body("numTel")
+      .optional()
+      .isLength({ min: 6 })
       .trim()
       .escape(),
     body("email")
@@ -88,10 +108,6 @@ export const productValidation = () => {
       .trim()
       .escape()
       .withMessage("Name must be at least 6 chars long"),
-    body("image")
-      .isLength({ min: 1 })
-      .trim()
-      .withMessage("Image is required field"),
     body("category")
       .isLength({ min: 3 })
       .trim()

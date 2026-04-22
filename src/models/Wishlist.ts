@@ -5,6 +5,8 @@ const { ObjectId } = Schema.Types;
 export interface WishlistDocument extends Document {
   user: Types.ObjectId;
   product: Types.ObjectId;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const WishlistSchema = new Schema(

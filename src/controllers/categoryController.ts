@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Category } from '../models';
+import { Cloudinary } from '../lib/cloudinary';
 
 export const index = async (req: Request, res: Response) => {
   try {
@@ -10,10 +11,20 @@ export const index = async (req: Request, res: Response) => {
   }
 };
 
-
 export const store = async (req: Request, res: Response) => {
   try {
-    const { name, imageURL } = req.body;
+    const { name } = req.body;
+
+    if (!req.file?.buffer) {
+      return res.status(400).json({ message: 'Image is required' });
+    }
+
+    const imageURL = await Cloudinary.uploadBuffer(
+      req.file.buffer,
+      'categories',
+      { width: 400, height: 400 }
+    );
+
     const category = await Category.create({ name, imageURL });
     res.status(201).json({ data: category });
   } catch (error) {

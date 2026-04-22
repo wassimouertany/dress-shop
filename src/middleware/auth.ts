@@ -23,7 +23,7 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
 export const authorize = (roles: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const user = req.user as User;
-    if (!roles.includes(user.role)) {
+    if (user.role !== roles) {
       return res.status(403).json({
         message: 'You are not authorize to perform this action',
       });

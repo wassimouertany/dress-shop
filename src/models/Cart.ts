@@ -4,18 +4,19 @@ import { Schema, model, Document } from 'mongoose';
 
 const { ObjectId, Number } = Schema.Types;
 
-interface Items {
+export interface CartItem {
   quantity: number;
   product: ProductDocument['_id'];
 }
 
 export interface CartDocument extends Document {
   user: UserDocument['_id'];
-  items: Items[];
+  items: CartItem[];
 }
 
 const CartSchema = new Schema(
   {
+    // Client uses User discriminator; ref stays 'User'
     user: {
       type: ObjectId,
       ref: 'User',

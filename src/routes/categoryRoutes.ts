@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import { index, store } from '../controllers/categoryController';
-import { protect, authorize } from '../middleware';
-
+import { protect, authorize, uploadImage } from '../middleware';
 
 const router = Router();
 
-router.route('/').get(index).post(protect, authorize('admin'), store);
+router
+  .route('/')
+  .get(index)
+  .post(uploadImage, protect, authorize('ADMIN'), store);
 
 export { router as categoryRoutes };
