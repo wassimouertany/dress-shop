@@ -163,5 +163,5 @@ export const deleteProduct = async (id: string): Promise<void> => {
     throw new Error('Product not found');
   }
 
-  await product.remove();
+  await Product.deleteOne({ _id: product._id }).exec();
 };
