@@ -2,13 +2,13 @@ import { LivraisonDocument } from '../models/Livraison';
 
 export interface ILivraisonService {
   getLivraisonByOrder(
-    userId: string,
+    userId:  string,
     orderId: string
   ): Promise<LivraisonDocument>;
 
   updateLivraisonStatus(
-    userId: string,
+    userId:      string,
     livraisonId: string,
-    status: string
+    status:      string
   ): Promise<LivraisonDocument>;
 }
