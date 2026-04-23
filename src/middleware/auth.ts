@@ -1,6 +1,6 @@
 import { Response, Request, NextFunction } from 'express';
 import passport from 'passport';
-import { User } from '../types';
+import { AuthenticatedUser } from '../types';
 
 export const protect = (req: Request, res: Response, next: NextFunction) => {
   return passport.authenticate(
@@ -22,7 +22,7 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
 
 export const authorize = (roles: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const user = req.user as User;
+    const user = req.user as AuthenticatedUser;
     if (user.role !== roles) {
       return res.status(403).json({
         message: 'You are not authorize to perform this action',

@@ -1,11 +1,14 @@
 import { Role } from './Role';
 
-export type User = {
-  _id: string;
+export type IdentifiableUser = { _id: string };
+export type AuthenticatedUser = { _id: string; role: Role };
+export type TokenPayloadUser = { _id: string; password?: string };
+
+/** @deprecated */
+export type User = AuthenticatedUser & {
   username: string;
   email: string;
   password: string;
-  role: Role;
   carts: string[];
 };
 

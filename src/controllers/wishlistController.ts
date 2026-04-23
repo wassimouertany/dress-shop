@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { User as UserTypes } from '../types';
+import { IdentifiableUser } from '../types';
 import {
   getWishlistByUser,
   addToWishlist,
@@ -26,7 +26,7 @@ const mapWishlistError = (res: Response, error: unknown): boolean => {
 
 export const index = async (req: Request, res: Response) => {
   try {
-    const user = req.user as UserTypes;
+    const user = req.user as IdentifiableUser;
     const wishlist = await getWishlistByUser(String(user._id));
     res.status(200).json({ data: wishlist });
   } catch (error) {
@@ -39,7 +39,7 @@ export const index = async (req: Request, res: Response) => {
 
 export const store = async (req: Request, res: Response) => {
   try {
-    const user = req.user as UserTypes;
+    const user = req.user as IdentifiableUser;
     const { productId } = req.body;
     const wishlist = await addToWishlist(String(user._id), productId);
     res.status(200).json({ data: wishlist });
@@ -53,7 +53,7 @@ export const store = async (req: Request, res: Response) => {
 
 export const destroy = async (req: Request, res: Response) => {
   try {
-    const user = req.user as UserTypes;
+    const user = req.user as IdentifiableUser;
     const { productId } = req.body;
     await removeFromWishlist(String(user._id), productId);
     res.status(200).json({ data: null });

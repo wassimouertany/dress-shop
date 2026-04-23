@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { User as UserType } from '../types';
+import { IdentifiableUser } from '../types';
 import {
   getLivraisonByOrder,
   updateLivraisonStatus,
@@ -32,7 +32,7 @@ const mapLivraisonError = (res: Response, error: unknown): boolean => {
 
 export const getByOrder = async (req: Request, res: Response) => {
   try {
-    const user = req.user as UserType;
+    const user = req.user as IdentifiableUser;
     const { orderId } = req.params;
     const livraison = await getLivraisonByOrder(String(user._id), orderId);
     res.status(200).json({ data: livraison, success: true });
@@ -46,7 +46,7 @@ export const getByOrder = async (req: Request, res: Response) => {
 
 export const updateStatus = async (req: Request, res: Response) => {
   try {
-    const user = req.user as UserType;
+    const user = req.user as IdentifiableUser;
     const { id } = req.params;
     const { status } = req.body as { status?: string };
     const updated = await updateLivraisonStatus(String(user._id), id, status ?? '');

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { User as UserType } from '../types';
+import { IdentifiableUser, TokenPayloadUser } from '../types';
 import { UserDocument } from '../models';
 import passport from 'passport';
 import {
@@ -13,7 +13,7 @@ export const sendResponseToken = ({
   res,
   statusCode,
 }: {
-  user: UserType | UserDocument;
+  user: UserDocument | TokenPayloadUser;
   statusCode: number;
   res: Response;
 }) => {
@@ -70,7 +70,7 @@ export const getMe = async (req: Request, res: Response) => {
 
 export const changePassword = async (req: Request, res: Response) => {
   try {
-    const user = req.user as UserType;
+    const user = req.user as IdentifiableUser;
     const { newPassword, oldPassword, confirmNewPassword } = req.body;
 
     if (newPassword !== confirmNewPassword) {

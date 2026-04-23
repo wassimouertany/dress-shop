@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { User as UserTypes } from '../types';
+import { IdentifiableUser } from '../types';
 import {
   getCartByUser,
   addItemToCart,
@@ -30,7 +30,7 @@ const respondServiceError = (res: Response, error: unknown): boolean => {
 
 export const index = async (req: Request, res: Response) => {
   try {
-    const user = req.user as UserTypes;
+    const user = req.user as IdentifiableUser;
     const cart = await getCartByUser(String(user._id));
     res.status(200).json({ data: cart });
   } catch (error) {
@@ -43,7 +43,7 @@ export const index = async (req: Request, res: Response) => {
 
 export const store = async (req: Request, res: Response) => {
   try {
-    const user = req.user as UserTypes;
+    const user = req.user as IdentifiableUser;
     const { productId, quantity } = req.body;
     const cartItem = await addItemToCart(
       String(user._id),
@@ -61,7 +61,7 @@ export const store = async (req: Request, res: Response) => {
 
 export const remove = async (req: Request, res: Response) => {
   try {
-    const user = req.user as UserTypes;
+    const user = req.user as IdentifiableUser;
     const { productId } = req.body;
     const items = await removeItemFromCart(String(user._id), productId);
     res.status(200).json({ data: items });
@@ -75,7 +75,7 @@ export const remove = async (req: Request, res: Response) => {
 
 export const update = async (req: Request, res: Response) => {
   try {
-    const user = req.user as UserTypes;
+    const user = req.user as IdentifiableUser;
     const { productId, quantity } = req.body;
     const cartItem = await updateItemQuantity(
       String(user._id),
