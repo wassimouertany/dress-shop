@@ -30,9 +30,12 @@ export const addItemToCart = async (
 ): Promise<CartItemDocument> => {
   const cart = await getOrCreateCart(userId);
 
+  // GRASP Creator — cart.buildCartItem() delegates the construction
+  const itemData = cart.buildCartItem(productId, quantity);
+
   const cartItem = await CartItem.findOneAndUpdate(
-    { cart: cart._id, product: productId },
-    { $inc: { quantity } },
+    { cart: itemData.cart, product: itemData.product },
+    { $inc: { quantity: itemData.quantity } },
     { new: true, upsert: true, setDefaultsOnInsert: true }
   ).populate('product');
 
@@ -53,9 +56,11 @@ export const removeItemFromCart = async (
     throw new Error('Cart not found');
   }
 
-  await CartItem.deleteOne({ cart: cart._id, product: productId });
+  // Cart knows its own _id — use buildCartItem to get a consistent filter shape
+  const { cart: cartId } = cart.buildCartItem(productId, 1);
+  await CartItem.deleteOne({ cart: cartId, product: productId });
 
-  return CartItem.find({ cart: cart._id }).populate('product').exec();
+  return CartItem.find({ cart: cartId }).populate('product').exec();
 };
 
 export const updateItemQuantity = async (
@@ -73,8 +78,10 @@ export const updateItemQuantity = async (
     throw new Error('Cart does not belong to this user');
   }
 
+  const { cart: cartId } = cart.buildCartItem(productId, quantity);
+
   const cartItem = await CartItem.findOneAndUpdate(
-    { cart: cart._id, product: productId },
+    { cart: cartId, product: productId },
     { $set: { quantity } },
     { new: true }
   ).populate('product');
