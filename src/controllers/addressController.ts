@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import { Address } from '../models/Address'; // On pointe le fichier précis
-import { User as UserType } from '../types';
+import { IdentifiableUser } from '../types';
 
 export const index = async (req: Request, res: Response) => {
   try {
-    const user = req.user as UserType;
+    const user = req.user as IdentifiableUser;
     const addresses = await Address.find({ user: user._id }).sort('-createdAt');
     res.status(200).json({ data: addresses, success: true });
   } catch (error) {
@@ -14,7 +14,7 @@ export const index = async (req: Request, res: Response) => {
 
 export const store = async (req: Request, res: Response) => {
   try {
-    const user = req.user as UserType;
+    const user = req.user as IdentifiableUser;
     const { region, city, street, postalCode, streetNumber } = req.body;
 
     const address = await Address.create({
@@ -34,7 +34,7 @@ export const store = async (req: Request, res: Response) => {
 
 export const remove = async (req: Request, res: Response) => {
   try {
-    const user = req.user as UserType;
+    const user = req.user as IdentifiableUser;
     const { id } = req.params;
 
     const address = await Address.findOneAndDelete({

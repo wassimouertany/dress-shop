@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { User as UserType } from '../types';
+import { AuthenticatedUser } from '../types';
 import { updateUserProfile } from '../services/userService';
 
 const mapUserError = (res: Response, error: unknown): boolean => {
@@ -24,7 +24,7 @@ export const update = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { username, email, fullName, numTel } = req.body;
-    const auth = req.user as UserType;
+    const auth = req.user as AuthenticatedUser;
     const user = await updateUserProfile(
       id,
       { username, email, fullName, numTel },

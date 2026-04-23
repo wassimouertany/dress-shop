@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { User as UserType } from '../types';
+import { IdentifiableUser } from '../types';
 import { createReview, getReviewsByProduct } from '../services/reviewService';
 
 const mapReviewError = (res: Response, error: unknown): boolean => {
@@ -22,7 +22,7 @@ const mapReviewError = (res: Response, error: unknown): boolean => {
 
 export const create = async (req: Request, res: Response) => {
   try {
-    const user = req.user as UserType;
+    const user = req.user as IdentifiableUser;
     const { product: productId, rating, comment } = req.body;
     const populated = await createReview(
       String(user._id),

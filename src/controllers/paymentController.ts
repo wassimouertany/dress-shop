@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { User as UserType } from '../types';
+import { IdentifiableUser } from '../types';
 import { processPayment } from '../services/paymentService';
 
 const respondPaymentError = (res: Response, error: unknown): boolean => {
@@ -28,7 +28,7 @@ const respondPaymentError = (res: Response, error: unknown): boolean => {
 
 export const payment = async (req: Request, res: Response) => {
   try {
-    const user = req.user as UserType;
+    const user = req.user as IdentifiableUser;
     const { method, addressId } = req.body as {
       method?: string;
       addressId?: string;

@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import { User as UserTypes } from '../types';
+import { IdentifiableUser } from '../types';
 import { Order } from '../models';
 
 export const index = async (req: Request, res: Response) => {
   try {
-    const user = req.user as UserTypes;
+    const user = req.user as IdentifiableUser;
     const orders = await Order.find({ user: user._id })
       .populate({
         path: 'items',
