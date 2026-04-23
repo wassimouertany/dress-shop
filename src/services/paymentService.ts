@@ -23,9 +23,6 @@ const cartItemsPopulate = {
   populate: { path: 'product' },
 } as const;
 
-const asPopulatedProduct = (ref: unknown): ProductDocument =>
-  ref as ProductDocument;
-
 // ─── processPayment ───────────────────────────────────────────────────────────
 
 export const processPayment = async (
@@ -71,11 +68,7 @@ export const processPayment = async (
   }
 
   // ── 4. Calcul du total (inchangé) ─────────────────────────────────────────
-  const total = cart.items.reduce(
-    (acc, el) =>
-      acc + asPopulatedProduct(el.product).price * el.quantity,
-    0
-  );
+  const total = cart.calculateTotal();
 
   // ── 5. Création de la commande (inchangée) ────────────────────────────────
   const order = await Order.create({
@@ -88,7 +81,8 @@ export const processPayment = async (
     cart.items.map((item) => ({
       order: order._id,
       quantity: item.quantity,
-      product: asPopulatedProduct(item.product)._id ?? item.product,
+      product:
+        (item.product as unknown as ProductDocument)._id ?? item.product,
     }))
   );
 

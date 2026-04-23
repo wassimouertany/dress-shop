@@ -7,6 +7,7 @@ const { ObjectId } = Schema.Types;
 export interface CartDocument extends Document {
   user: UserDocument['_id'];
   items?: CartItemDocument[];
+  calculateTotal(): number;
 }
 
 const CartSchema = new Schema(
@@ -29,5 +30,13 @@ CartSchema.virtual('items', {
   foreignField: 'cart',
   options: { sort: { createdAt: -1 } },
 });
+
+CartSchema.methods.calculateTotal = function (): number {
+  if (!this.items?.length) return 0;
+  return this.items.reduce(
+    (acc: number, item: any) => acc + item.product.price * item.quantity,
+    0
+  );
+};
 
 export const Cart = model<CartDocument>('Cart', CartSchema);

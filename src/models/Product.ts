@@ -14,7 +14,7 @@ export interface ProductDocument extends Document {
   category: Types.ObjectId;
   description: string;
   stockQuantity: number;
-  isAvailable: boolean;
+  isAvailable?: boolean;
 }
 
 const productSchema = new Schema(
@@ -45,5 +45,18 @@ productSchema.index(
     },
   }
 );
+
+productSchema.pre<ProductDocument>('save', function () {
+  if (this.isModified('stockQuantity')) {
+    this.isAvailable = this.stockQuantity > 0;
+  }
+});
+
+productSchema.pre('findOneAndUpdate', function () {
+  const update = this.getUpdate() as any;
+  if (update?.stockQuantity !== undefined) {
+    update.isAvailable = Number(update.stockQuantity) > 0;
+  }
+});
 
 export const Product = model<ProductDocument>('Product', productSchema);
