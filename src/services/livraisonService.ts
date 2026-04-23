@@ -1,7 +1,9 @@
-import { Order } from '../models';
-import { Livraison, StatusEnum, LivraisonDocument } from '../models/Livraison';
-import { ILivraisonRepository } from '../interfaces/ILivraisonRepository';
-import { ILivraisonService } from '../interfaces/ILivraisonService';
+
+import { StatusEnum, LivraisonDocument } from '../models/Livraison';
+import { ILivraisonRepository }           from '../interfaces/ILivraisonRepository';
+import { ILivraisonService }              from '../interfaces/ILivraisonService';
+import { LivraisonStatusValidator }       from '../validators/livraisonStatusValidator';
+import { LivraisonOwnershipGuard }        from '../guards/livraisonOwnershipGuard';
 
 export class LivraisonService implements ILivraisonService {
 
@@ -12,13 +14,10 @@ export class LivraisonService implements ILivraisonService {
   }
 
   async getLivraisonByOrder(
-    userId: string,
+    userId:  string,
     orderId: string
   ): Promise<LivraisonDocument> {
-    const order = await Order.findOne({ _id: orderId, user: userId }).exec();
-    if (!order) {
-      throw new Error('Order not found');
-    }
+    await LivraisonOwnershipGuard.verifyOrderOwnership(userId, orderId);
 
     const livraison = await this.livraisonRepository.findByOrder(orderId);
     if (!livraison) {
@@ -29,28 +28,21 @@ export class LivraisonService implements ILivraisonService {
   }
 
   async updateLivraisonStatus(
-    userId: string,
+    userId:      string,
     livraisonId: string,
-    status: string
+    status:      string
   ): Promise<LivraisonDocument> {
-    if (!Livraison.isValidStatus(status)) throw new Error('Invalid status');
+    LivraisonStatusValidator.validate(status);
 
     const livraison = await this.livraisonRepository.findById(livraisonId);
     if (!livraison) {
       throw new Error('Livraison not found');
     }
 
-    const order = await Order.findOne({
-      _id: livraison.order,
-      user: userId,
-    }).exec();
-    if (!order) {
-      throw new Error('Not allowed');
-    }
+    await LivraisonOwnershipGuard.verifyLivraisonOwnership(userId, livraison.order);
 
-    livraison.applyStatusTransition(status as StatusEnum);
-    const updated = await livraison.save();
+    LivraisonStatusValidator.applyTransition(livraison, status as StatusEnum);
 
-    return updated;
+    return livraison.save();
   }
 }
