@@ -10,6 +10,12 @@ export interface OrderDocument extends Document {
   payment?: Types.ObjectId;
   livraison?: Types.ObjectId;
   address?: Types.ObjectId;
+
+  // GRASP Creator — Order aggregates OrderItems, so it is
+  // responsible for building them.
+  buildOrderItems(
+    cartItems: Array<{ product: Types.ObjectId | string; quantity: number }>
+  ): Array<{ order: Types.ObjectId; product: Types.ObjectId | string; quantity: number }>;
 }
 
 const OrderSchema = new Schema(
@@ -45,5 +51,18 @@ OrderSchema.virtual('items', {
   foreignField: 'order',
   options: { sort: { createdAt: -1 } },
 });
+
+/* =====================================
+ GRASP Creator — buildOrderItems
+ =====================================*/
+OrderSchema.methods.buildOrderItems = function (
+  cartItems: Array<{ product: Types.ObjectId | string; quantity: number }>
+): Array<{ order: Types.ObjectId; product: Types.ObjectId | string; quantity: number }> {
+  return cartItems.map((item) => ({
+    order:    this._id as Types.ObjectId,
+    product:  item.product,
+    quantity: item.quantity,
+  }));
+};
 
 export const Order = model<OrderDocument>('Order', OrderSchema);
