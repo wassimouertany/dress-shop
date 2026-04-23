@@ -1,51 +1,50 @@
 import mongoose, { Schema, model, Document, Types } from 'mongoose';
+import { paymentRegistry } from '../services/payment/PaymentProcessorRegistry';
 
 const { ObjectId, Number: NumberType, String } = Schema.Types;
 
-export enum PaymentMethodEnum {
-  Paypal = 'PAYPAL',
-  Stripe = 'STRIPE',
-}
-
 export enum PaymentStatusEnum {
-  Pending = 'PENDING',
+  Pending    = 'PENDING',
   Processing = 'PROCESSING',
-  Completed = 'COMPLETED',
-  Failed = 'FAILED',
-  Cancelled = 'CANCELLED',
+  Completed  = 'COMPLETED',
+  Failed     = 'FAILED',
+  Cancelled  = 'CANCELLED',
 }
 
 export interface PaymentDocument extends Document {
-  order: Types.ObjectId;
-  amount: number;
-  method: string;
-  status: string;
+  order:         Types.ObjectId;
+  amount:        number;
+  method:        string;
+  status:        string;
   transactionId: string;
 }
 
 const PaymentSchema = new Schema(
   {
     order: {
-      type: ObjectId,
-      ref: 'Order',
+      type:     ObjectId,
+      ref:      'Order',
       required: true,
     },
     amount: {
-      type: NumberType,
+      type:     NumberType,
       required: true,
     },
     method: {
-      type: String,
-      enum: ['PAYPAL', 'STRIPE'],
+      type:     String,
+      enum: {
+        values:  paymentRegistry.getSupportedMethods(),
+        message: `{{VALUE}} is not a supported payment method`,
+      },
       required: true,
     },
     status: {
-      type: String,
-      enum: ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'CANCELLED'],
-      default: 'PENDING',
+      type:    String,
+      enum:    Object.values(PaymentStatusEnum),
+      default: PaymentStatusEnum.Pending,
     },
     transactionId: {
-      type: String,
+      type:    String,
       default: () => new mongoose.Types.ObjectId().toString(),
     },
   },

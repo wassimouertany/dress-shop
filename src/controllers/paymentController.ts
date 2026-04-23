@@ -10,8 +10,11 @@ const respondPaymentError = (res: Response, error: unknown): boolean => {
   const { message } = error;
 
   if (
-    message === 'Invalid or missing method; use PAYPAL or STRIPE' ||
-    message === 'addressId is required' ||
+    message === 'Payment method is required'         ||
+    message.startsWith('Unsupported payment method') ||
+    message.startsWith('PayPal:')                    ||
+    message.startsWith('Stripe:')                    ||
+    message === 'addressId is required'              ||
     message === 'Cart is empty'
   ) {
     res.status(400).json({ message });
@@ -29,15 +32,17 @@ const respondPaymentError = (res: Response, error: unknown): boolean => {
 export const payment = async (req: Request, res: Response) => {
   try {
     const user = req.user as IdentifiableUser;
-    const { method, addressId } = req.body as {
+    const { method, addressId, ...providerPayload } = req.body as {
       method?: string;
       addressId?: string;
+      [key: string]: unknown;
     };
 
     const { order, payment, livraison } = await processPayment(
       String(user._id),
       method ?? '',
-      addressId ?? ''
+      addressId ?? '',
+      providerPayload
     );
 
     res.status(200).json({
