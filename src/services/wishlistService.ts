@@ -39,5 +39,5 @@ export const removeFromWishlist = async (
     throw new Error('Product is not in your wishlist');
   }
 
-  await item.remove();
+  await Wishlist.deleteOne({ _id: item._id }).exec();
 };
