@@ -15,14 +15,9 @@ export class LivraisonRepository implements ILivraisonRepository {
 
   async updateStatus(
     livraisonId: string,
-    status: string,
-    deliveredAt?: Date
+    status: string
   ): Promise<LivraisonDocument | null> {
-    const payload: Record<string, unknown> = { status };
-    if (deliveredAt) {
-      payload.deliveredAt = deliveredAt;
-    }
-    return Livraison.findByIdAndUpdate(livraisonId, payload, { new: true })
+    return Livraison.findByIdAndUpdate(livraisonId, { status }, { new: true })
       .populate('address')
       .exec();
   }

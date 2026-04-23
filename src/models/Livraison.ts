@@ -1,6 +1,6 @@
-import { Schema, model, Document, Types } from 'mongoose';
+import { Schema, model, Document, Model, Types } from 'mongoose';
 
-const { ObjectId, String, Date } = Schema.Types;
+const { ObjectId, String, Date: SchemaDate } = Schema.Types;
 
 export enum StatusEnum {
   Shipped = 'SHIPPED',
@@ -14,6 +14,7 @@ export interface LivraisonDocument extends Document {
   status: string;
   trackingNumber: string;
   deliveredAt?: Date;
+  applyStatusTransition(status: StatusEnum): void;
 }
 
 const LivraisonSchema = new Schema(
@@ -32,11 +33,29 @@ const LivraisonSchema = new Schema(
       default: 'SHIPPED',
     },
     trackingNumber: String,
-    deliveredAt: Date,
+    deliveredAt: SchemaDate,
   },
   {
     timestamps: true,
   }
 );
 
-export const Livraison = model<LivraisonDocument>('Livraison', LivraisonSchema);
+interface LivraisonModel extends Model<LivraisonDocument> {
+  isValidStatus(status: string): boolean;
+}
+
+LivraisonSchema.statics.isValidStatus = function (status: string): boolean {
+  return Object.values(StatusEnum).includes(status as StatusEnum);
+};
+
+LivraisonSchema.methods.applyStatusTransition = function (
+  status: StatusEnum
+): void {
+  this.status = status;
+  if (status === StatusEnum.Delivered) this.deliveredAt = new Date();
+};
+
+export const Livraison = model<LivraisonDocument, LivraisonModel>(
+  'Livraison',
+  LivraisonSchema
+);

@@ -5,7 +5,6 @@ export interface ILivraisonRepository {
   findById(livraisonId: string): Promise<LivraisonDocument | null>;
   updateStatus(
     livraisonId: string,
-    status: string,
-    deliveredAt?: Date
+    status: string
   ): Promise<LivraisonDocument | null>;
 }

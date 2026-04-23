@@ -1,13 +1,7 @@
 import { Order } from '../models';
-import { StatusEnum, LivraisonDocument } from '../models/Livraison';
+import { Livraison, StatusEnum, LivraisonDocument } from '../models/Livraison';
 import { ILivraisonRepository } from '../interfaces/ILivraisonRepository';
 import { ILivraisonService } from '../interfaces/ILivraisonService';
-
-const STATUS_VALUES: string[] = [
-  StatusEnum.Shipped,
-  StatusEnum.InTransit,
-  StatusEnum.Delivered,
-];
 
 export class LivraisonService implements ILivraisonService {
 
@@ -39,9 +33,7 @@ export class LivraisonService implements ILivraisonService {
     livraisonId: string,
     status: string
   ): Promise<LivraisonDocument> {
-    if (!status || !STATUS_VALUES.includes(status)) {
-      throw new Error('Invalid status');
-    }
+    if (!Livraison.isValidStatus(status)) throw new Error('Invalid status');
 
     const livraison = await this.livraisonRepository.findById(livraisonId);
     if (!livraison) {
@@ -56,17 +48,8 @@ export class LivraisonService implements ILivraisonService {
       throw new Error('Not allowed');
     }
 
-    const deliveredAt =
-      status === StatusEnum.Delivered ? new Date() : undefined;
-
-    const updated = await this.livraisonRepository.updateStatus(
-      livraisonId,
-      status,
-      deliveredAt
-    );
-    if (!updated) {
-      throw new Error('Livraison not found');
-    }
+    livraison.applyStatusTransition(status as StatusEnum);
+    const updated = await livraison.save();
 
     return updated;
   }

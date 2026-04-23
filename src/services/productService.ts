@@ -8,7 +8,7 @@ export type ProductFields = {
   description: string;
   category: string;
   stockQuantity: number | string;
-  isAvailable: boolean | string;
+  isAvailable?: boolean | string;
 };
 
 export type CreateProductInput = {
@@ -87,7 +87,6 @@ export const createProduct = async (
     imageURL,
     category,
     stockQuantity: qty,
-    isAvailable: qty > 0,
   });
 };
 
@@ -110,7 +109,6 @@ export const updateProduct = async (
     description,
     category,
     stockQuantity,
-    isAvailable,
   } = data;
 
   if (name !== undefined) {
@@ -127,13 +125,6 @@ export const updateProduct = async (
   }
   if (stockQuantity !== undefined && stockQuantity !== '') {
     payload.stockQuantity = Number(stockQuantity);
-  }
-
-  if (isAvailable !== undefined) {
-    payload.isAvailable =
-      isAvailable === true ||
-      isAvailable === 'true' ||
-      String(isAvailable).toLowerCase() === 'true';
   }
 
   if (imageBuffer) {
