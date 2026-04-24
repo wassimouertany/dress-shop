@@ -1,26 +1,25 @@
 import { Types } from 'mongoose';
-import { Order } from '../models';
+import { IOrderRepository } from '../interfaces/IOrderRepository';
 
 export class LivraisonOwnershipGuard {
 
-  static async verifyOrderOwnership(
-    userId:  string,
-    orderId: string
-  ): Promise<void> {
-    const order = await Order.findOne({ _id: orderId, user: userId }).exec();
+  constructor(private readonly orderRepository: IOrderRepository) {}
+
+  async verifyOrderOwnership(userId: string, orderId: string): Promise<void> {
+    const order = await this.orderRepository.findByIdAndUser(orderId, userId);
     if (!order) {
       throw new Error('Order not found');
     }
   }
 
-  static async verifyLivraisonOwnership(
-    userId:           string,
+  async verifyLivraisonOwnership(
+    userId: string,
     livraisonOrderId: Types.ObjectId
   ): Promise<void> {
-    const order = await Order.findOne({
-      _id:  livraisonOrderId,
-      user: userId,
-    }).exec();
+    const order = await this.orderRepository.findByIdAndUser(
+      String(livraisonOrderId),
+      userId
+    );
     if (!order) {
       throw new Error('Not allowed');
     }

@@ -1,36 +1,30 @@
-
 import { StatusEnum, LivraisonDocument } from '../models/Livraison';
-import { ILivraisonRepository }           from '../interfaces/ILivraisonRepository';
-import { ILivraisonService }              from '../interfaces/ILivraisonService';
-import { LivraisonStatusValidator }       from '../validators/livraisonStatusValidator';
-import { LivraisonOwnershipGuard }        from '../guards/livraisonOwnershipGuard';
+import { ILivraisonRepository }    from '../interfaces/ILivraisonRepository';
+import { ILivraisonService }       from '../interfaces/ILivraisonService';
+import { LivraisonStatusValidator } from '../validators/livraisonStatusValidator';
+import { LivraisonOwnershipGuard } from '../guards/livraisonOwnershipGuard';
 
 export class LivraisonService implements ILivraisonService {
 
-  private readonly livraisonRepository: ILivraisonRepository;
+  constructor(
+    private readonly livraisonRepository: ILivraisonRepository,
+    private readonly ownershipGuard: LivraisonOwnershipGuard  // ← injecté
+  ) {}
 
-  constructor(livraisonRepository: ILivraisonRepository) {
-    this.livraisonRepository = livraisonRepository;
-  }
-
-  async getLivraisonByOrder(
-    userId:  string,
-    orderId: string
-  ): Promise<LivraisonDocument> {
-    await LivraisonOwnershipGuard.verifyOrderOwnership(userId, orderId);
+  async getLivraisonByOrder(userId: string, orderId: string): Promise<LivraisonDocument> {
+    await this.ownershipGuard.verifyOrderOwnership(userId, orderId);
 
     const livraison = await this.livraisonRepository.findByOrder(orderId);
     if (!livraison) {
       throw new Error('Livraison not found');
     }
-
     return livraison;
   }
 
   async updateLivraisonStatus(
-    userId:      string,
+    userId: string,
     livraisonId: string,
-    status:      string
+    status: string
   ): Promise<LivraisonDocument> {
     LivraisonStatusValidator.validate(status);
 
@@ -39,8 +33,7 @@ export class LivraisonService implements ILivraisonService {
       throw new Error('Livraison not found');
     }
 
-    await LivraisonOwnershipGuard.verifyLivraisonOwnership(userId, livraison.order);
-
+    await this.ownershipGuard.verifyLivraisonOwnership(userId, livraison.order);
     LivraisonStatusValidator.applyTransition(livraison, status as StatusEnum);
 
     return livraison.save();

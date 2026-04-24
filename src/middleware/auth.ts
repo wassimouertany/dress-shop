@@ -1,6 +1,6 @@
 import { Response, Request, NextFunction } from 'express';
 import passport from 'passport';
-import { AuthenticatedUser } from '../types';
+import { AuthenticatedUser, Role } from '../types';
 
 export const protect = (req: Request, res: Response, next: NextFunction) => {
   return passport.authenticate(
@@ -8,24 +8,25 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
     { session: false },
     function (err, user, info) {
       if (err) {
-        return next(info);
+        return next(err);   // ← était next(info)
       }
-      if (!user)
+      if (!user) {
         return res.status(401).json({
           message: 'Not Authorized',
         });
+      }
       req.user = user;
       return next();
     }
   )(req, res, next);
 };
 
-export const authorize = (roles: string) => {
+export const authorize = (role: Role) => {   // ← était (roles: string)
   return (req: Request, res: Response, next: NextFunction) => {
     const user = req.user as AuthenticatedUser;
-    if (user.role !== roles) {
+    if (user.role !== role) {
       return res.status(403).json({
-        message: 'You are not authorize to perform this action',
+        message: 'You are not authorized to perform this action',  // ← faute corrigée
       });
     }
     next();
