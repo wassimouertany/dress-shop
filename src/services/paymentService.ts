@@ -16,10 +16,7 @@ import {
 import { Address } from '../models/Address';
 import { paymentRegistry } from './payment/PaymentProcessorRegistry';
 
-const cartItemsPopulate = {
-  path: 'items',
-  populate: { path: 'product' },
-} as const;
+// ─── processPayment ───────────────────────────────────────────────────────────
 
 export const processPayment = async (
   userId: string,
@@ -32,7 +29,7 @@ export const processPayment = async (
   livraison: LivraisonDocument;
 }> => {
 
-  // ── 1. Validate payment method ────────────────────────────────────────────
+  // ── 1. Validation de la méthode via le registry (OCP) ──────────────────────
   if (!method) {
     throw new Error('Payment method is required');
   }
@@ -40,7 +37,7 @@ export const processPayment = async (
   const processor = paymentRegistry.get(method);
   processor.validate(providerPayload);
 
-  // ── 2. Validate address ───────────────────────────────────────────────────
+  // ── 2. Validation de l'adresse ────────────────────────────────────────────
   if (!addressId) {
     throw new Error('addressId is required');
   }
@@ -54,41 +51,46 @@ export const processPayment = async (
     throw new Error('Address not found');
   }
 
-  // ── 3. Validate cart ──────────────────────────────────────────────────────
+  // ── 3. Validation du panier ───────────────────────────────────────────────
+  // FIX: removed `as const` on the populate config — it caused Mongoose to
+  // silently skip virtual population, making cart.items always undefined.
   const cart = await Cart.findOne({ user: userId })
-    .populate(cartItemsPopulate)
+    .populate({
+      path: 'items',
+      populate: { path: 'product' },
+    })
     .exec();
 
   if (!cart?.items?.length) {
     throw new Error('Cart is empty');
   }
 
-  // ── 4. Calculate total ────────────────────────────────────────────────────
+  // ── 4. Calcul du total ─────────────────────────────────────────────────────
   const total = cart.calculateTotal();
 
-  // ── 5. Create order ───────────────────────────────────────────────────────
+  // ── 5. Création de la commande ────────────────────────────────────────────
   const order = await Order.create({
     user: userId,
     total,
     address: address._id,
   });
 
-  // ── 6. GRASP Creator — let Order build its own OrderItems ─────────────────
-  
-  const cartItemsData = cart.items.map((item) => ({
-    product:  (item.product as unknown as ProductDocument)._id ?? item.product,
-    quantity: item.quantity,
-  }));
+  await OrderItem.insertMany(
+    cart.items.map((item) => ({
+      order: order._id,
+      quantity: item.quantity,
+      product:
+        (item.product as unknown as ProductDocument)._id ?? item.product,
+    }))
+  );
 
-  await OrderItem.insertMany(order.buildOrderItems(cartItemsData));
-
-  // ── 7. Process payment via registry ──────────────────────────────────────
+  // ── 6. Traitement du paiement via le processor sélectionné (OCP) ──────────
   const result = await processor.process(total, String(order._id));
 
   const paymentStatusMap: Record<string, PaymentStatusEnum> = {
-    COMPLETED: PaymentStatusEnum.Completed,
-    PENDING:   PaymentStatusEnum.Pending,
-    FAILED:    PaymentStatusEnum.Failed,
+    COMPLETED:  PaymentStatusEnum.Completed,
+    PENDING:    PaymentStatusEnum.Pending,
+    FAILED:     PaymentStatusEnum.Failed,
   };
 
   const paymentRecord = await Payment.create({
@@ -99,7 +101,7 @@ export const processPayment = async (
     transactionId: result.transactionId,
   });
 
-  // ── 8. Create livraison ───────────────────────────────────────────────────
+  // ── 7. Création de la livraison ───────────────────────────────────────────
   const livraison = await Livraison.create({
     order:          order._id,
     address:        address._id,
@@ -112,10 +114,10 @@ export const processPayment = async (
     livraison: livraison._id,
   }).exec();
 
-  // ── 9. Clear cart ─────────────────────────────────────────────────────────
+  // ── 8. Nettoyage du panier ─────────────────────────────────────────────────
   await CartItem.deleteMany({ cart: cart._id }).exec();
 
-  // ── 10. Return completed order ────────────────────────────────────────────
+  // ── 9. Retour de la commande complète ──────────────────────────────────────
   const completedOrder = await Order.findById(order._id)
     .populate({
       path: 'items',
