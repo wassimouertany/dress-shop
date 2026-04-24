@@ -1,8 +1,4 @@
-// src/validators/livraisonStatusValidator.ts
-// Ce validator est simplifié : il vérifie uniquement que le status
-// est une valeur connue. La logique de TRANSITION est maintenant
-// dans LivraisonContext (State Pattern).
-import { StatusEnum } from '../models/Livraison';
+import { StatusEnum, LivraisonDocument } from '../models/Livraison';
 
 export class LivraisonStatusValidator {
 
@@ -18,6 +14,20 @@ export class LivraisonStatusValidator {
   static validate(status: string): void {
     if (!LivraisonStatusValidator.isValid(status)) {
       throw new Error('Invalid status');
+    }
+  }
+
+  static requiresDeliveryDate(status: string): boolean {
+    return status === StatusEnum.Delivered;
+  }
+
+  static applyTransition(
+    livraison: LivraisonDocument,
+    status:    StatusEnum
+  ): void {
+    livraison.status = status;
+    if (LivraisonStatusValidator.requiresDeliveryDate(status)) {
+      livraison.deliveredAt = new Date();
     }
   }
 }

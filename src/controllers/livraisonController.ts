@@ -1,4 +1,3 @@
-// src/controllers/livraisonController.ts
 import { Request, Response }  from 'express';
 import { IdentifiableUser }   from '../types';
 import { ILivraisonService }  from '../interfaces/ILivraisonService';
@@ -14,11 +13,6 @@ const mapLivraisonError = (res: Response, error: unknown): boolean => {
     res.status(400).json({
       message: 'Invalid status; use SHIPPED, IN_TRANSIT, or DELIVERED',
     });
-    return true;
-  }
-  // Nouveau : erreurs de transition illégale du State Pattern
-  if (error.message.startsWith('Invalid transition:')) {
-    res.status(422).json({ message: error.message });
     return true;
   }
   if (error.message.toLowerCase().includes('not found')) {
@@ -46,6 +40,7 @@ export class LivraisonController {
         String(user._id),
         orderId
       );
+
       res.status(200).json({ data: livraison, success: true });
     } catch (error) {
       if (mapLivraisonError(res, error)) return;
@@ -64,6 +59,7 @@ export class LivraisonController {
         id,
         status ?? ''
       );
+
       res.status(200).json({ data: updated, success: true });
     } catch (error) {
       if (mapLivraisonError(res, error)) return;
