@@ -1,5 +1,9 @@
 import { Review, Product, ReviewDocument } from '../models';
 
+// ── GoF Observer Pattern ───────────────────────────────────────────────────────
+import { reviewEventEmitter } from '../observers/ReviewEventEmitter';
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const createReview = async (
   userId: string,
   productId: string | undefined,
@@ -22,6 +26,15 @@ export const createReview = async (
     rating: Number(rating),
     comment: comment ?? '',
   });
+
+  // GoF Observer: notify all subscribers about the new review ───────────────
+  await reviewEventEmitter.notifyObservers({
+    reviewId:  String(review._id),
+    productId,
+    userId,
+    rating:    Number(rating),
+  });
+  // ───────────────────────────────────────────────────────────────────────────
 
   return Review.findById(review._id).populate('user').exec();
 };
