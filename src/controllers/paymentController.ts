@@ -1,10 +1,7 @@
 import { Request, Response } from 'express';
 import { IdentifiableUser } from '../types';
-import {
-  processPayment,
-  PaymentValidationError,
-  ResourceNotFoundError,
-} from '../services/paymentService';
+import { checkoutFacade } from '../services/checkout/CheckoutFacade';
+import { PaymentValidationError, ResourceNotFoundError } from '../services/payment/paymentErrors';
 
 const respondPaymentError = (res: Response, error: unknown): boolean => {
   if (error instanceof PaymentValidationError) {
@@ -27,7 +24,7 @@ export const payment = async (req: Request, res: Response) => {
       [key: string]: unknown;
     };
 
-    const { order, payment, livraison } = await processPayment(
+    const { order, payment, livraison } = await checkoutFacade.checkout(
       String(user._id),
       method ?? '',
       addressId ?? '',
