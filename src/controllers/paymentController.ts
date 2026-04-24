@@ -1,31 +1,20 @@
 import { Request, Response } from 'express';
 import { IdentifiableUser } from '../types';
-import { processPayment } from '../services/paymentService';
+import {
+  processPayment,
+  PaymentValidationError,
+  ResourceNotFoundError,
+} from '../services/paymentService';
 
 const respondPaymentError = (res: Response, error: unknown): boolean => {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-
-  const { message } = error;
-
-  if (
-    message === 'Payment method is required'         ||
-    message.startsWith('Unsupported payment method') ||
-    message.startsWith('PayPal:')                    ||
-    message.startsWith('Stripe:')                    ||
-    message === 'addressId is required'              ||
-    message === 'Cart is empty'
-  ) {
-    res.status(400).json({ message });
+  if (error instanceof PaymentValidationError) {
+    res.status(400).json({ message: error.message });
     return true;
   }
-
-  if (message === 'Address not found') {
-    res.status(404).json({ message });
+  if (error instanceof ResourceNotFoundError) {
+    res.status(404).json({ message: error.message });
     return true;
   }
-
   return false;
 };
 
@@ -46,17 +35,11 @@ export const payment = async (req: Request, res: Response) => {
     );
 
     res.status(200).json({
-      data: {
-        order,
-        payment,
-        livraison,
-      },
+      data: { order, payment, livraison },
       success: true,
     });
   } catch (error) {
-    if (respondPaymentError(res, error)) {
-      return;
-    }
+    if (respondPaymentError(res, error)) return;
     res.status(500).json({ message: 'Payment failed' });
   }
 };

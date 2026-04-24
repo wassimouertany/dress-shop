@@ -10,8 +10,11 @@ export const generateAuthToken = (userId: string): string =>
 
 export const buildAuthPayload = (
   user: UserDocument | TokenPayloadUser
-): { user: UserDocument | TokenPayloadUser; token: string } => {
+): { user: Omit<UserDocument | TokenPayloadUser, 'password'>; token: string } => {
   const token = generateAuthToken(user._id.toString());
-  user.password = undefined;
-  return { user, token };
+
+  // Crée un nouvel objet sans muter l'original
+  const { password: _omit, ...safeUser } = user as UserDocument;
+
+  return { user: safeUser, token };
 };
