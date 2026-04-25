@@ -1,6 +1,6 @@
 import { Review, Product } from '../models';
 import { IReviewObserver, ReviewCreatedEvent } from './IReviewObserver';
-
+import { Types } from 'mongoose'; 
 /*================================================
  GoF Observer Pattern — Concrete Observer
  ===============================================*/
@@ -10,7 +10,7 @@ export class ProductRatingObserver implements IReviewObserver {
 
     // Aggregate all ratings for this product from the DB
     const result = await Review.aggregate([
-      { $match: { product: productId } },
+      { $match: { product: new Types.ObjectId(productId) } },
       { $group: { _id: '$product', avgRating: { $avg: '$rating' }, count: { $sum: 1 } } },
     ]);
 

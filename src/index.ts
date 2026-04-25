@@ -1,5 +1,5 @@
 require('dotenv').config();
-
+import './container';
 import express from 'express';
 import cors from 'cors';
 import { connectDb } from './database';
