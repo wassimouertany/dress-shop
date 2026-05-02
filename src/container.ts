@@ -8,8 +8,13 @@ import { LivraisonController }     from './controllers/livraisonController';
 import { reviewEventEmitter }        from './observers/ReviewEventEmitter';
 import { ProductRatingObserver }     from './observers/ProductRatingObserver';
 import { ReviewLoggerObserver }      from './observers/ReviewLoggerObserver';
+import { ReviewRepository }          from './repositories/reviewRepository';
+import { ProductRepository }         from './repositories/productRepository';
 
-reviewEventEmitter.subscribe(new ProductRatingObserver());
+const reviewRepository = new ReviewRepository();
+const productRepository = new ProductRepository();
+
+reviewEventEmitter.subscribe(new ProductRatingObserver(reviewRepository, productRepository));
 reviewEventEmitter.subscribe(new ReviewLoggerObserver());
 // ─────────────────────────────────────────────────────────────────────────────
 
