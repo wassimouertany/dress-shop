@@ -21,7 +21,7 @@ export class ReviewEventEmitter implements IReviewSubject {
       this.observers.map((observer) => observer.onReviewCreated(event))
     );
 
-    results.forEach((result, index) => {
+    results.forEach((result: PromiseSettledResult<void>, index: number) => {
       if (result.status === 'rejected') {
         const observerName = this.observers[index].constructor.name;
         console.error(
