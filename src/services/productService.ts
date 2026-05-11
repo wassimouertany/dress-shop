@@ -1,6 +1,7 @@
 import { Product, ProductDocument } from '../models';
 import APIFeatures from '../utils/ApiFeatures';
 import { uploadImage } from '../shared/imageUpload';
+import { productEventEmitter } from '../observers/ProductEventEmitter';
 
 export type ProductFields = {
   name: string;
@@ -101,6 +102,10 @@ export const updateProduct = async (
     throw new Error('Product not found');
   }
 
+  // Capture l'etat d'availability AVANT la mise a jour, pour pouvoir
+  // detecter une transition et notifier les observers (INV-5 / Wishlist).
+  const wasAvailable = product.isAvailable !== false;
+
   const payload: Record<string, unknown> = {};
 
   const {
@@ -142,6 +147,17 @@ export const updateProduct = async (
 
   if (!updated) {
     throw new Error('Product not found');
+  }
+
+  // GoF Observer - emission si la disponibilite a effectivement bascule.
+  // Les observateurs (ex. WishlistAvailabilityObserver) sont notifies
+  // de facon asynchrone et independante via Promise.allSettled.
+  const isAvailableNow = updated.isAvailable !== false;
+  if (isAvailableNow !== wasAvailable) {
+    await productEventEmitter.notifyObservers({
+      productId: String(updated._id),
+      isAvailable: isAvailableNow,
+    });
   }
 
   return updated;
