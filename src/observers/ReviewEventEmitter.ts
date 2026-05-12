@@ -17,18 +17,19 @@ export class ReviewEventEmitter implements IReviewSubject {
   }
 
   async notifyObservers(event: ReviewCreatedEvent): Promise<void> {
-    for (const observer of this.observers) {
-      try {
-        await observer.onReviewCreated(event);
-      } catch (err) {
-        // An observer failure must NEVER crash the main review-creation flow
-        // Log and continue
+    const results = await Promise.allSettled(
+      this.observers.map((observer) => observer.onReviewCreated(event))
+    );
+
+    results.forEach((result: PromiseSettledResult<void>, index: number) => {
+      if (result.status === 'rejected') {
+        const observerName = this.observers[index].constructor.name;
         console.error(
-          `[ReviewEventEmitter] Observer "${observer.constructor.name}" threw an error:`,
-          err
+          `[ReviewEventEmitter] Observer "${observerName}" threw an error:`,
+          result.reason
         );
       }
-    }
+    });
   }
 }
 

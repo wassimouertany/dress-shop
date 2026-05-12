@@ -4,7 +4,6 @@ import { ILivraisonRepository }        from '../interfaces/ILivraisonRepository'
 import { ILivraisonService }           from '../interfaces/ILivraisonService';
 import { LivraisonOwnershipGuard }     from '../guards/livraisonOwnershipGuard';
 import { LivraisonContext }            from '../states/LivraisonContext';
-import { LivraisonStatusValidator } from '../validators/livraisonStatusValidator';
 
 export class LivraisonService implements ILivraisonService {
 
@@ -39,7 +38,6 @@ export class LivraisonService implements ILivraisonService {
     await this.ownershipGuard.verifyLivraisonOwnership(userId, livraison.order);
 
 
-    LivraisonStatusValidator.validate(status);
     // State Pattern : on crée le contexte à partir du statut courant du document
     // puis on délègue la transition — plus de LivraisonStatusValidator ici
     const context = new LivraisonContext(livraison);

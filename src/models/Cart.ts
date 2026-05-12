@@ -39,7 +39,13 @@ CartSchema.virtual('items', {
 });
 
 CartSchema.methods.calculateTotal = function (): number {
-  if (!this.items?.length) return 0;
+  if (this.items === undefined) {
+    throw new Error(
+      'Cart.calculateTotal() called without populate(). ' +
+      'Use Cart.findById(id).populate("items").exec() first.'
+    );
+  }
+  if (!this.items.length) return 0;
   return this.items.reduce(
     (acc: number, item: any) => acc + item.product.price * item.quantity,
     0

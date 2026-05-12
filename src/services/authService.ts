@@ -1,21 +1,18 @@
 import { User, UserDocument } from '../models';
 import { generateAuthToken, buildAuthPayload } from '../shared/tokenUtils';
-import { Role } from '../types';
-import { UserFactory, CreateClientData } from '../factories/UserFactory';
+import { ClientCreator, CreateClientData } from '../factories/UserFactory';
 
 export const generateToken  = generateAuthToken;
 export const buildAuthResponse = buildAuthPayload;
 
-// ── Création utilisateur via UserFactory ──────────────────────────────────────
+// ── Création utilisateur via Factory Method (GoF) ─────────────────────────────
+// On choisit le ConcreteCreator (ClientCreator) par instanciation.
+// La vérification d'unicité de l'email est désormais portée par
+// UserCreator.registerUser() — opération "template" commune à tous les rôles.
 
 export const createUser = async (data: CreateClientData): Promise<UserDocument> => {
-  const existing = await User.findOne({ email: data.email.toLowerCase() });
-  if (existing) {
-    throw new Error('Email is already taken');
-  }
-  // Avant : Client.create({ ...data, role: Role.Client })
-  // Après : la Factory décide quel modèle instancier selon le rôle
-  return UserFactory.create(Role.Client, data);
+  const creator = new ClientCreator();
+  return creator.registerUser(data);
 };
 
 // ── Changement de mot de passe ────────────────────────────────────────────────
