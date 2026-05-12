@@ -26,6 +26,13 @@ const mapLivraisonError = (res: Response, error: unknown): boolean => {
     res.status(422).json({ message: error.message });
     return true;
   }
+
+  // Erreurs OCL — hook pre('save') Mongoose
+  if (error.message.startsWith('[OCL')) {
+    res.status(400).json({ message: error.message });
+    return true;
+  }
+
   if (error.message.toLowerCase().includes('not found')) {
     res.status(404).json({ message: error.message });
     return true;
