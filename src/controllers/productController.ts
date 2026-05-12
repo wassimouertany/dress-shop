@@ -70,6 +70,6 @@ export const update = async (req: Request, res: Response) => {
     if (error instanceof Error && error.message === 'Product not found') {
       return res.status(404).json({ message: 'Product not found' });
     }
-    res.status(500).json({ message: 'Error in creating product' });
+    res.status(500).json({ message: 'Error in updating product' });
   }
 };
