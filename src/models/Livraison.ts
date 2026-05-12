@@ -61,7 +61,8 @@ const LivraisonSchema = new Schema(
 //   self.status = DELIVERED implies self.deliveredAt = Date::now()
 // ──────────────────────────────────────────────────────────────────────────
 
-LivraisonSchema.pre('save', function (this: LivraisonDocument, next) {  const VALID_STATUSES = Object.values(StatusEnum);
+LivraisonSchema.pre('save', function (this: LivraisonDocument, next) {  
+  const VALID_STATUSES = Object.values(StatusEnum);
 
   // INV-1 : trackingNumber obligatoire et non vide
   if (!this.trackingNumber || this.trackingNumber.trim() === '') {
@@ -107,28 +108,6 @@ LivraisonSchema.pre('save', function (this: LivraisonDocument, next) {  const VA
         '[OCL INV-5 CommandeObligatoire] A Livraison must be linked to an existing order'
       )
     );
-  }
-
-  // PRE-1 + PRE-2 : uniquement si c'est une mise à jour du status
-  if (!this.isNew && this.isModified('status')) {
-    // PRE-1 : on ne peut pas modifier un statut déjà DELIVERED
-    if (this.get('status', null, { getters: false }) === StatusEnum.Delivered) {
-      return next(
-        new Error(
-          '[OCL PRE-1 StatutNonDelivre] Cannot update status: DELIVERED is a final state'
-        )
-      );
-    }
-
-    // PRE-2 : le nouveau statut doit être différent de l'actuel
-    const previousStatus = this.get('status', null, { getters: false });
-    if (previousStatus === this.status) {
-      return next(
-        new Error(
-          '[OCL PRE-2 NouveauStatutDifferent] New status must be different from current status'
-        )
-      );
-    }
   }
 
   next();
