@@ -38,7 +38,7 @@ export class LivraisonContext {
    */
   transition(nextStatus: string): void {
     // Délègue : l'état courant décide si c'est légal et applique le changement
-    // this.currentState.handle(this.livraison, nextStatus);
+    
     const previousStatus = this.livraison.status;
 
     this.currentState.handle(this.livraison, nextStatus);
