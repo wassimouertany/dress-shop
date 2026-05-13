@@ -23,7 +23,7 @@ export interface ProductDocument extends Document {
 const productSchema = new Schema(
   {
     name: String,
-    price: NumberType,
+    price: { type: NumberType, min: 0 },
     imageURL: String,
     category: {
       type: ObjectId,

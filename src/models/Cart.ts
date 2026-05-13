@@ -22,6 +22,7 @@ const CartSchema = new Schema(
     user: {
       type: ObjectId,
       ref: 'User',
+      required: true,
     },
   },
   {
@@ -40,10 +41,11 @@ CartSchema.virtual('items', {
 
 CartSchema.methods.calculateTotal = function (): number {
   if (!this.items?.length) return 0;
-  return this.items.reduce(
+  const total = this.items.reduce(
     (acc: number, item: any) => acc + item.product.price * item.quantity,
     0
   );
+  return Math.max(0, total);
 };
 
 /* ==================================
