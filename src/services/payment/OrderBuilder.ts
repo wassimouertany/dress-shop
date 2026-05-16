@@ -34,6 +34,13 @@ export class BuilderStateError extends Error {
   }
 }
 
+/**
+ * Coordinates checkout persistence. All Mongo writes for one checkout share one
+ * session so Order, OrderItems, Payment, Livraison (and cart cleanup) commit or
+ * roll back together. External `processor.process()` is not transactional with
+ * MongoDB; production systems typically add idempotency keys, outbox, or a
+ * compensating refund if the DB transaction aborts after a successful charge.
+ */
 export class OrderBuilder {
   private processor?: IPaymentProcessor;
   private address?: AddressNonNull;
@@ -67,110 +74,127 @@ export class OrderBuilder {
   }
 
   async build(): Promise<OrderResult> {
-  if (this.processor === undefined) {
-    throw new BuilderStateError('processor');
-  }
-  if (this.address === undefined) {
-    throw new BuilderStateError('address');
-  }
-  if (this.cart === undefined) {
-    throw new BuilderStateError('cart');
-  }
-  if (this.total === undefined) {
-    throw new BuilderStateError('total');
-  }
+    if (this.processor === undefined) {
+      throw new BuilderStateError('processor');
+    }
+    if (this.address === undefined) {
+      throw new BuilderStateError('address');
+    }
+    if (this.cart === undefined) {
+      throw new BuilderStateError('cart');
+    }
+    if (this.total === undefined) {
+      throw new BuilderStateError('total');
+    }
 
-  const processor = this.processor;
-  const address = this.address;
-  const cart = this.cart;
-  const total = this.total;
+    const processor = this.processor;
+    const address = this.address;
+    const cart = this.cart;
+    const total = this.total;
 
-  // ── Correction #1 & #2 : Transaction atomique + gestion d'erreurs ──
-  const session = await mongoose.startSession();
-  session.startTransaction();
+    const session = await mongoose.startSession();
 
-  try {
-    // 1. Créer la commande
-    const [order] = await Order.create([{
-      user: cart.user,
-      total,
-      address: address._id,
-    }], { session });
-
-    // 2. Créer les OrderItems via Order.buildOrderItems() ← Correction #3
-    const orderItemsData = order.buildOrderItems(
-      cart.items!.map((item) => ({
-        product: (item.product as unknown as ProductDocument)._id ?? item.product,
-        quantity: item.quantity,
-      }))
-    );
-    await OrderItem.insertMany(orderItemsData, { session });
-
-    // 3. Traitement paiement (Stripe / PayPal)
-    const result = await processor.process(total, String(order._id));
-
-    const paymentStatusMap: Record<string, PaymentStatusEnum> = {
-      COMPLETED: PaymentStatusEnum.Completed,
-      PENDING:   PaymentStatusEnum.Pending,
-      FAILED:    PaymentStatusEnum.Failed,
+    type TxOutcome = {
+      orderId: mongoose.Types.ObjectId;
+      payment: PaymentDocument;
+      livraison: LivraisonDocument;
     };
+    let txOutcome!: TxOutcome;
 
-    // 4. Créer le paiement
-    const [paymentRecord] = await Payment.create([{
-      order:         order._id,
-      amount:        total,
-      method:        processor.methodName,
-      status:        paymentStatusMap[result.status] ?? PaymentStatusEnum.Pending,
-      transactionId: result.transactionId,
-    }], { session });
+    try {
+      await session.withTransaction(async () => {
+        const [createdOrder] = await Order.create(
+          [
+            {
+              user: cart.user,
+              total,
+              address: address._id,
+            },
+          ],
+          { session }
+        );
 
-    // 5. Créer la livraison
-    const [livraison] = await Livraison.create([{
-      order:          order._id,
-      address:        address._id,
-      status:         StatusEnum.Shipped,
-      trackingNumber: `TRK-${new mongoose.Types.ObjectId().toString()}`,
-    }], { session });
+        const orderItemsData = createdOrder.buildOrderItems(
+          cart.items!.map((item) => ({
+            product:
+              (item.product as unknown as ProductDocument)._id ?? item.product,
+            quantity: item.quantity,
+          }))
+        );
+        await OrderItem.insertMany(orderItemsData, { session });
 
-    // 6. Lier payment + livraison à la commande
-    await Order.findByIdAndUpdate(
-      order._id,
-      { payment: paymentRecord._id, livraison: livraison._id },
-      { session }
-    ).exec();
+        const result = await processor.process(total, String(createdOrder._id));
 
-    // ✅ Tout a réussi → on valide la transaction
-    await session.commitTransaction();
+        const paymentStatusMap: Record<string, PaymentStatusEnum> = {
+          COMPLETED: PaymentStatusEnum.Completed,
+          PENDING: PaymentStatusEnum.Pending,
+          FAILED: PaymentStatusEnum.Failed,
+        };
 
-    // Nettoyage du panier (hors transaction — pas critique)
-    await CartItem.deleteMany({ cart: cart._id }).exec();
+        const [createdPayment] = await Payment.create(
+          [
+            {
+              order: createdOrder._id,
+              amount: total,
+              method: processor.methodName,
+              status:
+                paymentStatusMap[result.status] ?? PaymentStatusEnum.Pending,
+              transactionId: result.transactionId,
+            },
+          ],
+          { session }
+        );
 
-    // Retourner la commande complète
-    const completedOrder = await Order.findById(order._id)
-      .populate({ path: 'items', populate: { path: 'product' } })
-      .populate('payment')
-      .populate('address')
-      .populate('livraison')
-      .exec();
+        const [createdLivraison] = await Livraison.create(
+          [
+            {
+              order: createdOrder._id,
+              address: address._id,
+              status: StatusEnum.Shipped,
+              trackingNumber: `TRK-${new mongoose.Types.ObjectId().toString()}`,
+            },
+          ],
+          { session }
+        );
 
-    if (!completedOrder) {
-      throw new Error('Order not found after completion');
+        await Order.findByIdAndUpdate(
+          createdOrder._id,
+          { payment: createdPayment._id, livraison: createdLivraison._id },
+          { session }
+        ).exec();
+
+        await CartItem.deleteMany({ cart: cart._id }, { session }).exec();
+
+        txOutcome = {
+          orderId: createdOrder._id,
+          payment: createdPayment,
+          livraison: createdLivraison,
+        };
+      });
+
+      const completedOrder = await Order.findById(txOutcome.orderId)
+        .populate({ path: 'items', populate: { path: 'product' } })
+        .populate('payment')
+        .populate('address')
+        .populate('livraison')
+        .exec();
+
+      if (!completedOrder) {
+        throw new Error('Order not found after completion');
+      }
+
+      return {
+        order: completedOrder,
+        payment: txOutcome.payment,
+        livraison: txOutcome.livraison,
+      };
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message.includes('E11000')) {
+        throw new BuilderStateError('duplicate-order');
+      }
+      throw new Error(`OrderBuilder.build() failed: ${String(err)}`);
+    } finally {
+      session.endSession();
     }
-
-    return { order: completedOrder, payment: paymentRecord, livraison };
-
-  } catch (err: unknown) {
-    // ❌ Une erreur → rollback automatique de TOUTES les écritures
-    await session.abortTransaction();
-
-    if (err instanceof Error && err.message.includes('E11000')) {
-      throw new BuilderStateError('duplicate-order');
-    }
-    throw new Error(`OrderBuilder.build() failed: ${String(err)}`);
-
-  } finally {
-    // Toujours fermer la session
-    session.endSession();
   }
-}
 }

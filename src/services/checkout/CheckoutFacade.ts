@@ -30,12 +30,16 @@ export class CheckoutFacade {
       .populate({ path: 'items', populate: { path: 'product' } })
       .exec();
 
+    if (!cart) {
+      throw new ResourceNotFoundError('Cart not found');
+    }
+
     try {
       return await new OrderBuilder()
         .setProviderPayload(providerPayload)
         .setProcessor(this.registry.get(method))
         .setAddress(address)
-        .setCart(cart!)
+        .setCart(cart)
         .build();
     } catch (error) {
       if (error instanceof BuilderStateError) {
