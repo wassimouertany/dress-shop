@@ -18,13 +18,19 @@ export interface OrderDocument extends Document {
   ): Array<{ order: Types.ObjectId; product: Types.ObjectId | string; quantity: number }>;
 }
 
+/** OCL: context Order — inv TotalNonNeg: self.total >= 0; inv UserRequired: user defined */
 const OrderSchema = new Schema(
   {
     user: {
       type: ObjectId,
       ref: 'User',
+      required: [true, 'OCL UserRequired: Order.user must be set'],
     },
-    total: NumberType,
+    total: {
+      type: NumberType,
+      required: [true, 'OCL Order: total must be set when enforcing TotalNonNeg'],
+      min: [0, 'OCL TotalNonNeg: Order.total must be >= 0'],
+    },
     payment: {
       type: ObjectId,
       ref: 'Payment',
@@ -54,15 +60,35 @@ OrderSchema.virtual('items', {
 
 /* =====================================
  GRASP Creator — buildOrderItems
+ OCL pre:  CartNotEmpty, QuantitiesValid
+ OCL post: OrderLinked (each result row’s order = self)
  =====================================*/
 OrderSchema.methods.buildOrderItems = function (
   cartItems: Array<{ product: Types.ObjectId | string; quantity: number }>
 ): Array<{ order: Types.ObjectId; product: Types.ObjectId | string; quantity: number }> {
-  return cartItems.map((item) => ({
-    order:    this._id as Types.ObjectId,
-    product:  item.product,
+  if (!cartItems.length) {
+    throw new Error('OCL CartNotEmpty: cartItems must not be empty');
+  }
+  for (const i of cartItems) {
+    if (typeof i.quantity !== 'number' || i.quantity < 1) {
+      throw new Error('OCL QuantitiesValid: each cart item quantity must be >= 1');
+    }
+  }
+
+  const selfId = this._id as Types.ObjectId;
+  const result = cartItems.map((item) => ({
+    order: selfId,
+    product: item.product,
     quantity: item.quantity,
   }));
+
+  for (const o of result) {
+    if (!o.order.equals(selfId)) {
+      throw new Error('OCL OrderLinked: each built row must reference this order');
+    }
+  }
+
+  return result;
 };
 
 export const Order = model<OrderDocument>('Order', OrderSchema);
